@@ -60,7 +60,45 @@ def find_right_bottom_point(points):
     right_bottom_point = max(rightmost_points, key=lambda p: p[1])
     return right_bottom_point
 
-def find_magsens_pos(image, points, sens_bot_dist, sens_left_dist):
+def draw_ltr(image, segments, points, fids, dut_bot_dist, dut_right_dist, ext_diam):
+    for seg in segments:
+        x1, y1, x2, y2, width, layer = seg
+        x1, y1, x2, y2, width = map(float, [x1, y1, x2, y2, width])
+
+        lb_tf = np.array(find_left_bottom_point(points)) #px
+        rb_tf = np.array(find_right_bottom_point(points)) #px
+        rt_tf = np.array(find_right_top_point(points)) #px
+
+        lb = np.array(find_left_bottom_point(fids)) #mm
+        rb = np.array(find_right_bottom_point(fids)) #mm
+        rt = np.array(find_right_top_point(fids)) #mm
+
+        p1 = np.array([x1,y1]) #mm
+        p2 = np.array([x2,y2]) #mm
+
+        vec_1 = rb_tf - rt_tf #px
+        vec_2 = lb_tf - rb_tf #px
+
+        px_per_mm_bot = np.linalg.norm(vec_2) / dut_bot_dist
+        px_per_mm_right = np.linalg.norm(vec_1) / dut_right_dist
+        print(f"mm/px bottom_l_r:{dut_bot_dist/np.linalg.norm(vec_2)}")
+        print(f"mm/px bottom_l_r:{dut_right_dist/np.linalg.norm(vec_1)}")
+
+        p1_tf = rt_tf+(p1-rt)[1]*px_per_mm_right*vec_1/np.linalg.norm(vec_1)+(rb-p1)[0]*px_per_mm_bot*vec_2/np.linalg.norm(vec_2)+ext_diam/2+1
+        p2_tf = rt_tf+(p2-rt)[1]*px_per_mm_right*vec_1/np.linalg.norm(vec_1)+(rb-p2)[0]*px_per_mm_bot*vec_2/np.linalg.norm(vec_2)+ext_diam/2+1
+
+        p1_tf = (int(p1_tf[0]),int(p1_tf[1]))
+        p2_tf = (int(p2_tf[0]),int(p2_tf[1]))
+
+        print(f"{p1_tf}, {p2_tf}")
+
+        cv2.line(image, p1_tf, p2_tf, (0,0,255), 1)
+
+
+
+
+
+def draw_magsens_pos(image, points, sens_bot_dist, sens_left_dist):
     lb = np.array(find_left_bottom_point(points))
     lt = np.array(find_left_top_point(points))
     rb = np.array(find_right_bottom_point(points))
