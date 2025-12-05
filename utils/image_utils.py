@@ -31,10 +31,10 @@ def find_points(match_img, points_to_find):
         threshold -= 0.01
     return found_points
 
-def paint_matched_points(image, points, external_diameter):
+def paint_matched_points(image, points, external_diameter, color):
     for point in points:
         bottom_left_corner = (point[0] + external_diameter, point[1] + external_diameter)
-        cv2.rectangle(image, point, bottom_left_corner, (0,0,255), 10)
+        cv2.rectangle(image, point, bottom_left_corner, color, 2)
 
 def find_left_top_point(points):
     sorted_points = sorted(points, key=lambda p: p[0])
@@ -42,11 +42,50 @@ def find_left_top_point(points):
     left_top_point = min(leftmost_points, key=lambda p: p[1])
     return left_top_point
 
+def find_left_bottom_point(points):
+    sorted_points = sorted(points, key=lambda p: p[0])
+    leftmost_points = sorted_points[:2]
+    left_bottom_point = max(leftmost_points, key=lambda p: p[1])
+    return left_bottom_point
+
+def find_right_top_point(points):
+    sorted_points = sorted(points, key=lambda p: p[0], reverse=True)
+    rightmost_points = sorted_points[:2]
+    right_top_point = min(rightmost_points, key=lambda p: p[1])
+    return right_top_point
+
 def find_right_bottom_point(points):
     sorted_points = sorted(points, key=lambda p: p[0], reverse=True)    
     rightmost_points = sorted_points[:2]    
     right_bottom_point = max(rightmost_points, key=lambda p: p[1])
     return right_bottom_point
+
+def find_magsens_pos(image, points, sens_bot_dist, sens_left_dist):
+    lb = np.array(find_left_bottom_point(points))
+    lt = np.array(find_left_top_point(points))
+    rb = np.array(find_right_bottom_point(points))
+
+    vec_1 = lb-lt
+    vec_2 = rb-lb
+
+    px_per_mm_bot = np.linalg.norm(vec_2)/sens_bot_dist
+    px_per_mm_left = np.linalg.norm(vec_1)/sens_left_dist
+    #print(f"mm/px bottom_l_r:{sens_bot_dist/np.linalg.norm(vec_2)}")
+    #print(f"mm/px bottom_l_r:{sens_left_dist/np.linalg.norm(vec_1)}")
+
+    for i in range(6):
+        for j in range(4):
+            sens_pos_px = lt+px_per_mm_left*(14+j*6)*vec_1/np.linalg.norm(vec_1)+vec_2*(9+i*6)*px_per_mm_bot/np.linalg.norm(vec_2)
+            #TODO: HARDCODED OFFSET +1PX. HIGHER RES -> DELETE?
+            sens_pos_px = (int(sens_pos_px[0]+1), int(sens_pos_px[1]+1))
+            bottom_left_sens_pos_px = (sens_pos_px[0]+40, sens_pos_px[1]+40)
+
+            print(sens_pos_px)
+
+            cv2.rectangle(image, sens_pos_px, bottom_left_sens_pos_px, (0,0,255), 2)
+
+
+
 
 def calculate_angle(points):
     x1, y1 = find_left_top_point (points)
