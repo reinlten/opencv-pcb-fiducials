@@ -60,18 +60,46 @@ def find_right_bottom_point(points):
     right_bottom_point = max(rightmost_points, key=lambda p: p[1])
     return right_bottom_point
 
+def fid_orientation(points):
+    A, B, C = points
+
+    # Seitenlängen (Index 0=AB, 1=BC, 2=CA)
+    sides = [
+        math.dist(A, B),  # 0
+        math.dist(B, C),  # 1
+        math.dist(C, A)  # 2
+    ]
+
+    # Seiten indexbasiert sortieren
+    shortest, middle, longest = sorted(range(3), key=lambda i: sides[i])
+
+    # Seiten, die an den jeweiligen Punkten liegen
+    point_sides = {
+        0: {0, 2},  # Punkt A liegt an AB (0) und CA (2)
+        1: {0, 1},  # Punkt B liegt an AB (0) und BC (1)
+        2: {1, 2},  # Punkt C liegt an BC (1) und CA (2)
+    }
+
+    role = {}
+
+    for idx, s in point_sides.items():
+        if shortest in s and middle in s:
+            role["mid"] = points[idx]
+        elif shortest in s and longest in s:
+            role["short"] = points[idx]
+        elif middle in s and longest in s:
+            role["long"] = points[idx]
+
+
+    return np.array(role["long"]), np.array(role["mid"]), np.array(role["short"])
+
 def draw_ltr(image, segments, points, fids, dut_bot_dist, dut_right_dist, ext_diam):
     for seg in segments:
         x1, y1, x2, y2, width, layer = seg
         x1, y1, x2, y2, width = map(float, [x1, y1, x2, y2, width])
 
-        lb_tf = np.array(find_left_bottom_point(points)) #px
-        rb_tf = np.array(find_right_bottom_point(points)) #px
-        rt_tf = np.array(find_right_top_point(points)) #px
-
-        lb = np.array(find_left_bottom_point(fids)) #mm
-        rb = np.array(find_right_bottom_point(fids)) #mm
-        rt = np.array(find_right_top_point(fids)) #mm
+        lb_tf, rb_tf, rt_tf = fid_orientation(points) #px
+        lb, rb, rt = fid_orientation(fids) #mm
 
         p1 = np.array([x1,y1]) #mm
         p2 = np.array([x2,y2]) #mm
@@ -81,8 +109,8 @@ def draw_ltr(image, segments, points, fids, dut_bot_dist, dut_right_dist, ext_di
 
         px_per_mm_bot = np.linalg.norm(vec_2) / dut_bot_dist
         px_per_mm_right = np.linalg.norm(vec_1) / dut_right_dist
-        print(f"mm/px bottom_l_r:{dut_bot_dist/np.linalg.norm(vec_2)}")
-        print(f"mm/px bottom_l_r:{dut_right_dist/np.linalg.norm(vec_1)}")
+        #print(f"mm/px bottom_l_r:{dut_bot_dist/np.linalg.norm(vec_2)}")
+        #print(f"mm/px bottom_l_r:{dut_right_dist/np.linalg.norm(vec_1)}")
 
         p1_tf = rt_tf+(p1-rt)[1]*px_per_mm_right*vec_1/np.linalg.norm(vec_1)+(rb-p1)[0]*px_per_mm_bot*vec_2/np.linalg.norm(vec_2)+ext_diam/2+1
         p2_tf = rt_tf+(p2-rt)[1]*px_per_mm_right*vec_1/np.linalg.norm(vec_1)+(rb-p2)[0]*px_per_mm_bot*vec_2/np.linalg.norm(vec_2)+ext_diam/2+1
@@ -90,13 +118,12 @@ def draw_ltr(image, segments, points, fids, dut_bot_dist, dut_right_dist, ext_di
         p1_tf = (int(p1_tf[0]),int(p1_tf[1]))
         p2_tf = (int(p2_tf[0]),int(p2_tf[1]))
 
-        print(f"{p1_tf}, {p2_tf}")
+        if layer == "F.Cu":
+            color = (0,0,255)
+        else:
+            color = (255,0,0)
 
-        cv2.line(image, p1_tf, p2_tf, (0,0,255), 1)
-
-
-
-
+        cv2.line(image, p1_tf, p2_tf, color, int(width*10))
 
 def draw_magsens_pos(image, points, sens_bot_dist, sens_left_dist):
     lb = np.array(find_left_bottom_point(points))

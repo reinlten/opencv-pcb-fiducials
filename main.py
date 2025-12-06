@@ -150,7 +150,7 @@ class MainWindow(QWidget):
             match_img_dut = cv2.matchTemplate(grey_image, pattern_dut, cv2.TM_CCOEFF_NORMED)
             found_points_dut = find_points(match_img_dut, MAX_MATCHS)
 
-            paint_matched_points(image, found_points_dut, EXTERNAL_DIAMETER_DUT, (255,0,0))
+            paint_matched_points(image, found_points_dut, EXTERNAL_DIAMETER_DUT, (0,255,0))
 
             segments = get_lines(path)
             fiducials = get_fiducials(path)
@@ -187,7 +187,7 @@ class MainWindow(QWidget):
         match_img_sensor = cv2.matchTemplate(grey_image, pattern_sensor, cv2.TM_CCOEFF_NORMED)
         found_points_sensor = find_points(match_img_sensor, MAX_MATCHS)
 
-        paint_matched_points(image, found_points_sensor, EXTERNAL_DIAMETER_SENSOR, (0,0,255))
+        paint_matched_points(image, found_points_sensor, EXTERNAL_DIAMETER_SENSOR, (0,255,0))
 
         draw_magsens_pos(image, found_points_sensor, SENSOR_BOTTOM_DIST_MM, SENSOR_LEFT_DIST_MM)
 
